@@ -94,7 +94,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
 
 
   return (
-    <div style={{ ...panelStyle, width: `${rightPanelWidth}px`, minWidth: "200px" }}>
+    <div style={{ ...panelStyle, width: `${rightPanelWidth}px`, minWidth: "340px" }}>
       <div style={panelHeaderStyle}>
         <span>🎛️ Properties</span>
         <span style={{ cursor: "pointer" }} onClick={() => setRightPanelWidth(rightPanelWidth === 250 ? 350 : 250)}>⚙️</span>

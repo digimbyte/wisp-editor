@@ -30,6 +30,7 @@
     "@types/js-yaml": "^4.0.9",
     "js-yaml": "^4.1.0",
     "react": "^19.1.0",
+    "react-best-gradient-color-picker": "^3.0.14",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
