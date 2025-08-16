@@ -4,8 +4,7 @@ import type {
   AudioAsset, 
   WorkspaceTab, 
   EditorTab,
-  SystemDefinition,
-  LayoutPanel 
+  SystemDefinition
 } from '../../types';
 import { SpritesExplorer } from '../panels/SpritesExplorer';
 
@@ -101,14 +100,20 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
           <span style={{ cursor: "pointer" }} onClick={() => setLeftPanelWidth(leftPanelWidth === 250 ? 350 : 250)}>⚙️</span>
         </div>
       </div>
-      <div style={{ flex: 1, padding: "8px", fontSize: "13px", overflow: "auto" }}>
+      <div style={{ 
+        flex: 1, 
+        padding: "8px", 
+        fontSize: "13px", 
+        overflow: "auto",
+        minHeight: 0 // Important: allows flex child to shrink below content size
+      }}>
         
         {/* Sprites Explorer */}
         {activeWorkspace === 'sprites' && (
           <SpritesExplorer
             sprites={sprites}
             selectedSprite={selectedSprite}
-            onSpriteSelect={setSelectedSprite}
+            onSelectSprite={setSelectedSprite}
             onContextMenu={handleContextMenu}
           />
         )}

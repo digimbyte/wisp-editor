@@ -11,6 +11,11 @@ import { CurrentColorSummary } from '../rightPanel/CurrentColorSummary';
 import { TabContent } from '../rightPanel/TabContent';
 import { SpriteInfo } from '../rightPanel/SpriteInfo';
 import { DrawingTools } from '../rightPanel/DrawingTools';
+import { RegionTools } from '../rightPanel/RegionTools';
+import { AnimationTools } from '../rightPanel/AnimationTools';
+import { DepthTools } from '../rightPanel/DepthTools';
+import { LogicTools } from '../rightPanel/LogicTools';
+import { PivotTools } from '../rightPanel/PivotTools';
 
 interface RightPanelProps {
   activeWorkspace: WorkspaceTab;
@@ -23,6 +28,8 @@ interface RightPanelProps {
   setActiveColorTab: (tab: 'picker' | 'custom' | 'common' | 'variations') => void;
   showLutManager: boolean;
   setShowLutManager: (show: boolean) => void;
+  // Sprite editing specific props
+  spriteEditorMode?: 'brush' | 'regions' | 'animations' | 'depth' | 'logic' | 'pivot';
 }
 
 // Bridge component to sync context state with external props
@@ -62,13 +69,15 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   activeColorTab,
   setActiveColorTab,
   showLutManager,
-  setShowLutManager
+  setShowLutManager,
+  spriteEditorMode
 }) => {
   const panelStyle = {
     background: "#1a1d23",
     border: "1px solid #2a2d36",
     display: "flex",
-    flexDirection: "column" as const
+    flexDirection: "column" as const,
+    height: "100%" // Use full height of parent container
   };
 
   const panelHeaderStyle = {
@@ -83,16 +92,6 @@ export const RightPanel: React.FC<RightPanelProps> = ({
     justifyContent: "space-between"
   };
 
-  const buttonStyle = {
-    padding: "6px 12px",
-    background: "#1d2330",
-    border: "1px solid #2a3348",
-    borderRadius: "4px",
-    cursor: "pointer",
-    color: "#e6e6e6",
-    fontSize: "13px",
-    fontWeight: "500" as const
-  };
 
   return (
     <div style={{ ...panelStyle, width: `${rightPanelWidth}px`, minWidth: "200px" }}>
@@ -100,34 +99,62 @@ export const RightPanel: React.FC<RightPanelProps> = ({
         <span>🎛️ Properties</span>
         <span style={{ cursor: "pointer" }} onClick={() => setRightPanelWidth(rightPanelWidth === 250 ? 350 : 250)}>⚙️</span>
       </div>
-      <div style={{ flex: 1, padding: "8px", fontSize: "12px", overflow: "auto" }}>
+      <div style={{ 
+        flex: 1, 
+        padding: "8px", 
+        fontSize: "12px", 
+        overflow: "auto",
+        minHeight: 0 // Important for flex child to allow scrolling
+      }}>
         {activeWorkspace === 'sprites' && selectedSprite ? (() => {
           const sprite = sprites.find(s => s.id === selectedSprite);
           if (!sprite) return null;
           
+          // Helper function to render tool-specific sidebar
+          const renderToolSidebar = () => {
+            switch (spriteEditorMode) {
+              case 'brush':
+              default:
+                return <DrawingTools />;
+              case 'regions':
+                return <RegionTools />;
+              case 'animations':
+                return <AnimationTools />;
+              case 'depth':
+                return <DepthTools />;
+              case 'logic':
+                return <LogicTools />;
+              case 'pivot':
+                return <PivotTools />;
+            }
+          };
+
           return (
             <div>
               <SpriteInfo sprite={sprite} />
               
-              <DrawingTools />
+              {/* Tool-specific sidebar based on current mode */}
+              {renderToolSidebar()}
 
-              {/* Pixel Artist Color Picker */}
-              <div style={{ marginBottom: "16px" }}>
-                <div style={{ fontSize: "12px", marginBottom: "8px", color: "#e6e6e6", fontWeight: "600" }}>Color Picker</div>
-                <RightPanelProvider>
-                  <RightPanelStateBridge
-                    activeColorTab={activeColorTab}
-                    setActiveColorTab={setActiveColorTab}
-                    showLutManager={showLutManager}
-                    setShowLutManager={setShowLutManager}
-                  />
-                  <ColorTabs />
-                  {/* Tab Content */}
-                  <TabContent />
-                  <CurrentColorSummary />
-                  <AdvancedSettings />
-                </RightPanelProvider>
-              </div>
+              {/* Pixel Artist Color Picker - only show for brush mode */}
+              {(!spriteEditorMode || spriteEditorMode === 'brush') && (
+                <div style={{ marginBottom: "16px" }}>
+                  <div style={{ fontSize: "12px", marginBottom: "8px", color: "#e6e6e6", fontWeight: "600" }}>Color Picker</div>
+                  <RightPanelProvider>
+                    <RightPanelStateBridge
+                      activeColorTab={activeColorTab}
+                      setActiveColorTab={setActiveColorTab}
+                      showLutManager={showLutManager}
+                      setShowLutManager={setShowLutManager}
+                    />
+                    <ColorTabs />
+                    {/* Tab Content */}
+                    <TabContent />
+                    <CurrentColorSummary />
+                    <AdvancedSettings />
+                  </RightPanelProvider>
+                </div>
+              )}
             </div>
           );
         })() : (

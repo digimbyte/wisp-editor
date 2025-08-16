@@ -2,7 +2,6 @@ import React from 'react';
 import { ProjectSelectionView } from './ProjectSelectionView';
 import { MainEditorView } from './MainEditorView';
 import type {
-  RecentProject, 
   WorkspaceTab,
   SpriteType,
   BoardDefinition,
@@ -12,8 +11,10 @@ import type {
   LayoutPanel,
   DatabaseTable,
   SystemDefinition,
-  WispConfig
+  BoardColumn,
+  ProjectCreationStep
 } from '../../types';
+import type { RecentProject, WispConfig } from '../../services/config';
 
 interface AppStateManagerProps {
   // App State - determines which view to show
@@ -142,17 +143,12 @@ interface AppStateManagerProps {
   setSelectedTemplate: (template: string) => void;
   selectedBoard: string;
   setSelectedBoard: (board: string) => void;
-  projectCreationStep: number;
-  setProjectCreationStep: (step: number) => void;
+  projectCreationStep: ProjectCreationStep;
+  setProjectCreationStep: (step: ProjectCreationStep) => void;
   isCreatingProject: boolean;
   availableBoards: BoardDefinition[];
-  boardColumns: Array<{
-    id: string;
-    label: string;
-    visible: boolean;
-    width: number;
-  }>;
-  setBoardColumns: (columns: any) => void;
+  boardColumns: BoardColumn[];
+  setBoardColumns: (columns: BoardColumn[]) => void;
   boardSortColumn: string;
   setBoardSortColumn: (column: string) => void;
   boardSortDirection: 'asc' | 'desc';
@@ -177,7 +173,8 @@ interface AppStateManagerProps {
 export const AppStateManager: React.FC<AppStateManagerProps> = (props) => {
   const { projectDir } = props;
 
-  // Project Selection View - Show when no project is open
+  // Redirect: This component is now a thin wrapper.
+  // Selection/creation and editor rendering are delegated to shells.
   if (!projectDir) {
     return (
       <ProjectSelectionView

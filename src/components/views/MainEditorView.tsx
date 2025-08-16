@@ -18,8 +18,10 @@ import type {
   LayoutPanel,
   DatabaseTable,
   SystemDefinition,
-  WispConfig
+  BoardColumn,
+  ProjectCreationStep
 } from '../../types';
+import type { WispConfig } from '../../services/config';
 
 interface MainEditorViewProps {
   // Package info
@@ -139,17 +141,12 @@ interface MainEditorViewProps {
   setSelectedTemplate: (template: string) => void;
   selectedBoard: string;
   setSelectedBoard: (board: string) => void;
-  projectCreationStep: number;
-  setProjectCreationStep: (step: number) => void;
+  projectCreationStep: ProjectCreationStep;
+  setProjectCreationStep: (step: ProjectCreationStep) => void;
   isCreatingProject: boolean;
   availableBoards: BoardDefinition[];
-  boardColumns: Array<{
-    id: string;
-    label: string;
-    visible: boolean;
-    width: number;
-  }>;
-  setBoardColumns: (columns: any) => void;
+  boardColumns: BoardColumn[];
+  setBoardColumns: (columns: BoardColumn[]) => void;
   boardSortColumn: string;
   setBoardSortColumn: (column: string) => void;
   boardSortDirection: 'asc' | 'desc';
@@ -236,7 +233,11 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
       />
 
       {/* Main Layout */}
-      <div style={{ flex: 1, display: "flex" }}>
+      <div style={{ 
+        flex: 1, 
+        display: "flex", 
+        minHeight: 0 // Important: allows flex child to shrink below content size
+      }}>
         
         {/* Left Panel - Workspace-Specific Explorer */}
         <LeftPanel
@@ -245,17 +246,16 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
           setLeftPanelWidth={setLeftPanelWidth}
           sprites={props.sprites}
           selectedSprite={props.selectedSprite}
-          onSpriteSelect={props.onSpriteSelect}
+          setSelectedSprite={props.onSpriteSelect}
           audioAssets={props.audioAssets}
           selectedAudio={props.selectedAudio}
-          onAudioSelect={props.onAudioSelect}
+          setSelectedAudio={props.onAudioSelect}
           editorTabs={props.editorTabs}
           activeTabId={props.activeTabId}
           setActiveTabId={props.setActiveTabId}
           systems={props.systems}
-          onOpenSpriteDialog={props.onOpenSpriteDialog}
-          onContextMenu={props.onContextMenu}
-          buttonStyle={buttonStyle}
+          openSpriteDialog={(m?: 'create' | 'import') => props.onOpenSpriteDialog(m ?? 'create')}
+          handleContextMenu={(e, type, name, path, category) => props.onContextMenu(e, type as 'file' | 'folder', name, path, category)}
         />
 
         {/* Center Panel - Workspace */}
@@ -303,11 +303,11 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
               <CodeWorkspace
                 editorTabs={props.editorTabs}
                 activeTabId={props.activeTabId}
-                setActiveTabId={props.setActiveTabId}
-                addNewTab={props.addNewTab}
-                closeTab={props.closeTab}
-                updateTabContent={props.updateTabContent}
                 activeTab={props.activeTab}
+                onTabSelect={props.setActiveTabId}
+                onCloseTab={(tabId) => props.closeTab(tabId)}
+                onAddNewTab={props.addNewTab}
+                onUpdateContent={(content) => props.updateTabContent(props.activeTabId, content)}
                 tabStyle={tabStyle}
                 activeTabStyle={activeTabStyle}
               />
@@ -319,11 +319,11 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
                 sprites={props.sprites}
                 selectedSprite={props.selectedSprite}
                 spriteEditorMode={props.spriteEditorMode}
-                setSpriteEditorMode={props.setSpriteEditorMode}
                 canvasView={props.canvasView}
-                setCanvasView={props.setCanvasView}
+                onSpriteEditorModeChange={props.setSpriteEditorMode}
+                onCanvasViewChange={props.setCanvasView}
+                onOpenSpriteDialog={(mode) => props.onOpenSpriteDialog(mode ?? 'create')}
                 buttonStyle={buttonStyle}
-                openSpriteDialog={props.openSpriteDialog}
               />
             )}
             
@@ -341,7 +341,7 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
               <LayoutWorkspace
                 layoutPanels={props.layoutPanels}
                 isPlayMode={props.isPlayMode}
-                setIsPlayMode={props.setIsPlayMode}
+                onTogglePlayMode={() => props.setIsPlayMode(!props.isPlayMode)}
                 buttonStyle={buttonStyle}
               />
             )}
@@ -351,7 +351,7 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
               <DatabaseWorkspace
                 databases={props.databases}
                 selectedDatabase={props.selectedDatabase}
-                setSelectedDatabase={props.setSelectedDatabase}
+                onDatabaseSelect={props.setSelectedDatabase}
                 buttonStyle={buttonStyle}
               />
             )}
@@ -370,7 +370,7 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
           setActiveColorTab={props.setActiveColorTab}
           showLutManager={props.showLutManager}
           setShowLutManager={props.setShowLutManager}
-          buttonStyle={buttonStyle}
+          spriteEditorMode={props.spriteEditorMode}
         />
       </div>
 
@@ -379,6 +379,7 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
         ...panelStyle, 
         height: `${bottomPanelHeight}px`, 
         minHeight: "120px",
+        maxHeight: "50vh", // Prevent console from taking more than half the viewport
         borderTop: "1px solid #2a2d36",
         borderLeft: "none",
         borderRight: "none",
@@ -413,8 +414,8 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
         isCreatingSprite={props.isCreatingSprite}
         onCloseSpriteDialog={props.onCloseSpriteDialog}
         onSpriteDialogModeChange={props.onSpriteDialogModeChange}
-        onSpriteDataChange={props.onSpriteDataChange}
-        onImportSpriteFile={props.onImportSpriteFile}
+        onDataChange={props.onSpriteDataChange}
+        onImportSpriteFile={() => props.onImportSpriteFile(null)}
         onCreateSprite={props.onCreateSprite}
         
         // Board Config Dialog props
@@ -424,10 +425,10 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
         importedBoardFile={props.importedBoardFile}
         onCloseBoardConfigDialog={props.onCloseBoardConfigDialog}
         onBoardConfigModeChange={props.onBoardConfigModeChange}
-        onBoardDefinitionChange={props.onBoardDefinitionChange}
-        onImportedBoardFileChange={props.onImportedBoardFileChange}
         onImportBoard={props.onImportBoard}
         onAddBoard={props.onAddBoard}
+        setNewBoardDefinition={props.onBoardDefinitionChange}
+        setImportedBoardFile={props.onImportedBoardFileChange}
         
         // Project Wizard Dialog props (even in main editor, wizard can be opened)
         showProjectWizard={props.showProjectWizard}
@@ -452,7 +453,7 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
         showColumnManager={props.showColumnManager}
         setShowColumnManager={props.setShowColumnManager}
         onOpenBoardConfigDialog={props.onOpenBoardConfigDialog}
-        onEditCustomBoard={props.onEditCustomBoard}
+        onEditCustomBoard={() => props.onEditCustomBoard({} as any)}
         onCreateProject={props.onCreateProject}
         onCloseProjectWizard={props.onCloseProjectWizard}
         log={log}

@@ -87,16 +87,32 @@ class SpriteService {
     imageData?: Uint8Array
   ): Promise<SpriteAsset> {
     try {
+      // Validate sprite dimensions - enforce 1024px hard limit
+      if (spriteData.width > 1024 || spriteData.height > 1024) {
+        throw new Error(`Sprite dimensions cannot exceed 1024px. Requested: ${spriteData.width}×${spriteData.height}`);
+      }
+      
+      if (spriteData.width < 1 || spriteData.height < 1) {
+        throw new Error('Sprite dimensions must be at least 1px');
+      }
+      
+      // Clamp dimensions to safe range (defensive programming)
+      const clampedSpriteData = {
+        ...spriteData,
+        width: Math.min(Math.max(spriteData.width, 1), 1024),
+        height: Math.min(Math.max(spriteData.height, 1), 1024)
+      };
+      
       // Ensure sprite directories exist
       await this.createSpriteDirectories(projectPath);
       
       // Generate unique ID
       const spriteId = `sprite-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Create sprite asset
+      // Create sprite asset using clamped dimensions
       const sprite: SpriteAsset = {
         id: spriteId,
-        ...spriteData
+        ...clampedSpriteData
       };
       
       // Determine folder path based on sprite type
@@ -379,7 +395,7 @@ class SpriteService {
     return this.loadSpritesFromProject(projectPath);
   }
 
-  async getSpriteData(projectPath: string, spriteId: string, spriteName: string, spriteType: SpriteAsset['type']): Promise<Uint8Array> {
+async getSpriteData(projectPath: string, _spriteId: string, spriteName: string, spriteType: SpriteAsset['type']): Promise<Uint8Array> {
     try {
       const typeFolderMap: Record<string, string> = {
         'background': 'background',

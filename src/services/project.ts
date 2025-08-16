@@ -90,7 +90,7 @@ class ProjectService {
       } catch (writeError) {
         console.error('Basic file write test failed:', writeError);
         console.error('Write error type:', typeof writeError);
-        console.error('Write error message:', writeError?.message || 'No message');
+        console.error('Write error message:', (writeError as any)?.message || 'No message');
         if (writeError instanceof Error) {
           console.error('Write error stack:', writeError.stack);
         }
@@ -174,7 +174,7 @@ class ProjectService {
     } catch (error) {
       console.error('Failed to create project:', error);
       console.error('Error type:', typeof error);
-      console.error('Error message:', error?.message || 'No message available');
+      console.error('Error message:', (error as any)?.message || 'No message available');
       if (error instanceof Error) {
         console.error('Error stack:', error.stack);
       }

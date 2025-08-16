@@ -2,11 +2,12 @@ import React from 'react';
 import { ProjectHub } from '../ProjectHub';
 import { DialogManager } from '../dialogs/DialogManager';
 import type { 
-  RecentProject, 
   BoardDefinition, 
   SpriteType,
-  WorkspaceTab 
+  BoardColumn,
+  ProjectCreationStep 
 } from '../../types';
+import type { RecentProject } from '../../services/config';
 
 interface ProjectSelectionViewProps {
   // Package info
@@ -61,17 +62,12 @@ interface ProjectSelectionViewProps {
   setSelectedTemplate: (template: string) => void;
   selectedBoard: string;
   setSelectedBoard: (board: string) => void;
-  projectCreationStep: number;
-  setProjectCreationStep: (step: number) => void;
+  projectCreationStep: ProjectCreationStep;
+  setProjectCreationStep: (step: ProjectCreationStep) => void;
   isCreatingProject: boolean;
   availableBoards: BoardDefinition[];
-  boardColumns: Array<{
-    id: string;
-    label: string;
-    visible: boolean;
-    width: number;
-  }>;
-  setBoardColumns: (columns: any) => void;
+  boardColumns: BoardColumn[];
+  setBoardColumns: (columns: BoardColumn[]) => void;
   boardSortColumn: string;
   setBoardSortColumn: (column: string) => void;
   boardSortDirection: 'asc' | 'desc';
@@ -99,8 +95,11 @@ export const ProjectSelectionView: React.FC<ProjectSelectionViewProps> = (props)
         onOpenExistingProject={props.onOpenExistingProject}
         recentProjects={props.recentProjects}
         onOpenProject={props.onOpenProject}
-        onRemoveRecentProject={props.onRemoveRecentProject}
-        formatLastOpened={props.formatLastOpened}
+        onRemoveRecentProject={(path: string, _e: React.MouseEvent) => {
+          props.onRemoveRecentProject(path);
+          return Promise.resolve();
+        }}
+        formatLastOpened={(ts) => props.formatLastOpened(ts as unknown as number)}
       />
       
       {/* All Dialogs are managed by DialogManager */}
@@ -112,8 +111,8 @@ export const ProjectSelectionView: React.FC<ProjectSelectionViewProps> = (props)
         isCreatingSprite={props.isCreatingSprite}
         onCloseSpriteDialog={props.onCloseSpriteDialog}
         onSpriteDialogModeChange={props.onSpriteDialogModeChange}
-        onSpriteDataChange={props.onSpriteDataChange}
-        onImportSpriteFile={props.onImportSpriteFile}
+        onDataChange={props.onSpriteDataChange}
+        onImportSpriteFile={() => props.onImportSpriteFile(null)}
         onCreateSprite={props.onCreateSprite}
         
         // Board Config Dialog props
@@ -123,10 +122,10 @@ export const ProjectSelectionView: React.FC<ProjectSelectionViewProps> = (props)
         importedBoardFile={props.importedBoardFile}
         onCloseBoardConfigDialog={props.onCloseBoardConfigDialog}
         onBoardConfigModeChange={props.onBoardConfigModeChange}
-        onBoardDefinitionChange={props.onBoardDefinitionChange}
-        onImportedBoardFileChange={props.onImportedBoardFileChange}
         onImportBoard={props.onImportBoard}
         onAddBoard={props.onAddBoard}
+        setNewBoardDefinition={props.onBoardDefinitionChange}
+        setImportedBoardFile={props.onImportedBoardFileChange}
         
         // Project Wizard Dialog props
         showProjectWizard={props.showProjectWizard}
@@ -151,7 +150,7 @@ export const ProjectSelectionView: React.FC<ProjectSelectionViewProps> = (props)
         showColumnManager={props.showColumnManager}
         setShowColumnManager={props.setShowColumnManager}
         onOpenBoardConfigDialog={props.onOpenBoardConfigDialog}
-        onEditCustomBoard={props.onEditCustomBoard}
+        onEditCustomBoard={() => props.onEditCustomBoard({} as any)}
         onCreateProject={props.onCreateProject}
         onCloseProjectWizard={props.onCloseProjectWizard}
         log={props.log}

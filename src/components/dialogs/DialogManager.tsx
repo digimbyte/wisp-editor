@@ -1,11 +1,12 @@
 import React from 'react';
 import { SpriteCreationDialog } from './SpriteCreationDialog';
 import { BoardConfigDialog } from './BoardConfigDialog';
-import { ProjectWizard } from '../ProjectWizard';
+import { ProjectWizard } from '../ProjectWizard/ProjectWizard';
 import type { 
   SpriteType, 
-  BoardDefinition, 
-  RecentProject 
+  BoardDefinition,
+  ProjectCreationStep,
+  BoardColumn
 } from '../../types';
 
 interface DialogManagerProps {
@@ -24,7 +25,7 @@ interface DialogManagerProps {
   isCreatingSprite: boolean;
   onCloseSpriteDialog: () => void;
   onSpriteDialogModeChange: (mode: 'create' | 'import') => void;
-  onSpriteDataChange: (data: any) => void;
+  onDataChange: (data: any) => void;
   onImportSpriteFile: () => void;
   onCreateSprite: () => void;
 
@@ -35,8 +36,8 @@ interface DialogManagerProps {
   importedBoardFile: string;
   onCloseBoardConfigDialog: () => void;
   onBoardConfigModeChange: (mode: 'import' | 'manual' | 'edit') => void;
-  onBoardDefinitionChange: (definition: Partial<BoardDefinition>) => void;
-  onImportedBoardFileChange: (file: string) => void;
+  setNewBoardDefinition: (definition: Partial<BoardDefinition>) => void;
+  setImportedBoardFile: (file: string) => void;
   onImportBoard: () => void;
   onAddBoard: () => void;
 
@@ -50,20 +51,20 @@ interface DialogManagerProps {
   setSelectedTemplate: (template: string) => void;
   selectedBoard: string;
   setSelectedBoard: (board: string) => void;
-  projectCreationStep: number;
-  setProjectCreationStep: (step: number) => void;
+  projectCreationStep: ProjectCreationStep;
+  setProjectCreationStep: (step: ProjectCreationStep) => void;
   isCreatingProject: boolean;
   availableBoards: BoardDefinition[];
-  boardColumns: any[];
-  setBoardColumns: (columns: any[]) => void;
+  boardColumns: BoardColumn[];
+  setBoardColumns: (columns: BoardColumn[]) => void;
   boardSortColumn: string;
   setBoardSortColumn: (column: string) => void;
   boardSortDirection: 'asc' | 'desc';
   setBoardSortDirection: (direction: 'asc' | 'desc') => void;
   showColumnManager: boolean;
   setShowColumnManager: (show: boolean) => void;
-  onOpenBoardConfigDialog: () => void;
-  onEditCustomBoard: (board: BoardDefinition) => void;
+  onOpenBoardConfigDialog: (mode: 'import' | 'manual') => void;
+  onEditCustomBoard: () => void;
   onCreateProject: () => void;
   onCloseProjectWizard: () => void;
   log: string;
@@ -82,7 +83,7 @@ export const DialogManager: React.FC<DialogManagerProps> = ({
   isCreatingSprite,
   onCloseSpriteDialog,
   onSpriteDialogModeChange,
-  onSpriteDataChange,
+  onDataChange,
   onImportSpriteFile,
   onCreateSprite,
 
@@ -92,9 +93,7 @@ export const DialogManager: React.FC<DialogManagerProps> = ({
   newBoardDefinition,
   importedBoardFile,
   onCloseBoardConfigDialog,
-  onBoardConfigModeChange,
-  onBoardDefinitionChange,
-  onImportedBoardFileChange,
+  setNewBoardDefinition,
   onImportBoard,
   onAddBoard,
 
@@ -141,7 +140,7 @@ export const DialogManager: React.FC<DialogManagerProps> = ({
         isCreating={isCreatingSprite}
         onClose={onCloseSpriteDialog}
         onModeChange={onSpriteDialogModeChange}
-        onSpriteDataChange={onSpriteDataChange}
+        onDataChange={onDataChange}
         onImportFile={onImportSpriteFile}
         onCreate={onCreateSprite}
         buttonStyle={buttonStyle}
@@ -151,14 +150,12 @@ export const DialogManager: React.FC<DialogManagerProps> = ({
       <BoardConfigDialog
         show={showBoardConfigDialog}
         mode={boardConfigMode}
-        boardDefinition={newBoardDefinition}
-        importedFile={importedBoardFile}
         onClose={onCloseBoardConfigDialog}
-        onModeChange={onBoardConfigModeChange}
-        onBoardDefinitionChange={onBoardDefinitionChange}
-        onImportedFileChange={onImportedBoardFileChange}
-        onImportBoard={onImportBoard}
-        onAddBoard={onAddBoard}
+        onImport={onImportBoard}
+        onAddCustomBoard={onAddBoard}
+        newBoardDefinition={newBoardDefinition}
+        setNewBoardDefinition={setNewBoardDefinition}
+        importedBoardFile={importedBoardFile}
         buttonStyle={buttonStyle}
       />
 

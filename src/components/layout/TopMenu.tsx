@@ -36,8 +36,7 @@ export const TopMenu: React.FC<TopMenuProps> = ({
   setShowEditMenu,
   showBuildMenu,
   setShowBuildMenu,
-  buttonStyle,
-  panelHeaderExtras
+  buttonStyle
 }) => {
   return (
     <div style={{

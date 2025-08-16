@@ -7,20 +7,18 @@ interface InfiniteFocusButtonProps {
 }
 
 export const InfiniteFocusButton: React.FC<InfiniteFocusButtonProps> = ({ spriteWidth, spriteHeight }) => {
-  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
-
   // Get reference to the InfiniteCanvas focusView function
   const handleFocus = React.useCallback(() => {
-    // Find the InfiniteCanvas component and call its focusView method
-    // This is a placeholder - in a real implementation, you'd use refs or context
-    // to communicate between components
-    console.log('Focus button clicked', { spriteWidth, spriteHeight });
+    console.log('🎯 Focus button clicked!', { spriteWidth, spriteHeight });
     
-    // For now, just trigger a custom event that the InfiniteCanvas can listen to
+    // Trigger a custom event that the InfiniteCanvas can listen to
     const focusEvent = new CustomEvent('infinite-canvas-focus', {
-      detail: { spriteWidth, spriteHeight }
+      detail: { spriteWidth, spriteHeight, timestamp: Date.now() }
     });
     window.dispatchEvent(focusEvent);
+    
+    // Also log to verify event was dispatched
+    console.log('🎯 Focus event dispatched:', focusEvent.detail);
   }, [spriteWidth, spriteHeight]);
 
   return (
@@ -97,7 +95,7 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({ spriteWidth, spr
     // Make sprite pixels much smaller - each sprite pixel should be 1/32 of the grid size
     // so a 32x32 sprite fits nicely in a single grid cell of 16px
         const spritePixelSize = zoom; // Each sprite pixel = 1px * zoom (1:1 with grid)
-        const gridSpacing = GRID_SIZE * zoom; // Grid spacing scales with zoom
+        // gridSpacing unused (computed implicitly via zoom)
     
     // Position sprite exactly where pan dictates - NO SNAPPING
     const worldCenterX = canvasWidth / 2 + panX;
@@ -286,52 +284,67 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({ spriteWidth, spr
   
   // Focus view function - dynamically fits sprite to canvas with margins
   const focusView = React.useCallback(() => {
+    console.log('🎯 focusView called for sprite:', spriteWidth, 'x', spriteHeight);
+    
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      console.warn('❌ Canvas ref not available for focus');
+      return;
+    }
     
     const rect = canvas.getBoundingClientRect();
     const canvasWidth = rect.width;
     const canvasHeight = rect.height;
     
-    // Calculate sprite size in world pixels (each sprite pixel = 1 world pixel at base zoom)
-    const spriteWorldWidth = spriteWidth;
-    const spriteWorldHeight = spriteHeight;
+    console.log('📐 Canvas dimensions:', canvasWidth, 'x', canvasHeight);
     
-    // Add generous margins for small sprites (30% of canvas, min 100px)
-    const marginX = Math.max(canvasWidth * 0.3, 100);
-    const marginY = Math.max(canvasHeight * 0.3, 100);
+    // Target the sprite to use about 60% of the smaller canvas dimension
+    // This ensures nice margins while being clearly visible
+    const smallerDimension = Math.min(canvasWidth, canvasHeight);
+    const targetSpriteScreenSize = smallerDimension * 0.6;
     
-    // Calculate available space for sprite
-    const availableWidth = canvasWidth - (marginX * 2);
-    const availableHeight = canvasHeight - (marginY * 2);
+    // Calculate zoom based on the larger sprite dimension to ensure it fits
+    const largerSpriteDimension = Math.max(spriteWidth, spriteHeight);
+    let targetZoom = targetSpriteScreenSize / largerSpriteDimension;
     
-    // Calculate zoom factors to fit sprite in available space
-    const zoomX = availableWidth / spriteWorldWidth;
-    const zoomY = availableHeight / spriteWorldHeight;
-    
-    // Use the smaller zoom to ensure sprite fits completely, with minimum for small sprites
-    let targetZoom = Math.min(zoomX, zoomY);
-    
-    // For very small sprites, ensure reasonable minimum zoom for visibility
-    if (spriteWidth <= 32 && spriteHeight <= 32) {
-      targetZoom = Math.max(targetZoom, 8); // At least 8x zoom for tiny sprites
+    // For very small sprites, apply reasonable minimum zoom for visibility
+    if (spriteWidth <= 16 && spriteHeight <= 16) {
+      targetZoom = Math.max(targetZoom, 16); // At least 16x zoom for very tiny sprites
+    } else if (spriteWidth <= 32 && spriteHeight <= 32) {
+      targetZoom = Math.max(targetZoom, 12); // At least 12x zoom for small sprites  
     } else if (spriteWidth <= 64 && spriteHeight <= 64) {
-      targetZoom = Math.max(targetZoom, 4); // At least 4x zoom for small sprites
+      targetZoom = Math.max(targetZoom, 8); // At least 8x zoom for medium sprites
     }
     
     // Clamp zoom to our limits
     targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom));
     
-    // Center the sprite in the viewport
-    // The sprite is always centered at canvas center when pan is 0,0
-    // So we keep pan at 0,0 to maintain perfect centering
+    // Center the sprite perfectly in the viewport
+    // According to drawCanvas: worldCenterX = canvasWidth / 2 + panX
+    // For perfect centering, we want worldCenterX = canvasWidth / 2
+    // Therefore: canvasWidth / 2 + panX = canvasWidth / 2 → panX = 0
     const targetPanX = 0;
     const targetPanY = 0;
     
-    // Apply the new zoom and pan smoothly
+    // Calculate actual sprite screen size with the target zoom
+    const actualSpriteScreenWidth = spriteWidth * targetZoom;
+    const actualSpriteScreenHeight = spriteHeight * targetZoom;
+    
+    console.log('🎯 Focus calculations:');
+    console.log('   - Smaller canvas dimension:', smallerDimension);
+    console.log('   - Target sprite screen size:', targetSpriteScreenSize.toFixed(1), 'px');
+    console.log('   - Larger sprite dimension:', largerSpriteDimension, 'px');
+    console.log('   - Target zoom:', targetZoom.toFixed(2));
+    console.log('   - Actual sprite screen size:', actualSpriteScreenWidth.toFixed(1), 'x', actualSpriteScreenHeight.toFixed(1));
+    console.log('   - Canvas utilization:', ((actualSpriteScreenWidth / canvasWidth) * 100).toFixed(1) + '%', 'x', ((actualSpriteScreenHeight / canvasHeight) * 100).toFixed(1) + '%');
+    console.log('   - Pan offset:', targetPanX, targetPanY);
+    
+    // Apply the new zoom and pan
     setZoom(targetZoom);
     setPanX(targetPanX);
     setPanY(targetPanY);
+    
+    console.log('✅ Focus view applied successfully');
   }, [spriteWidth, spriteHeight, MIN_ZOOM, MAX_ZOOM]);
   
   // Auto-focus on initial load and when sprite dimensions change
@@ -400,16 +413,23 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({ spriteWidth, spr
   // Listen for focus events from InfiniteFocusButton
   React.useEffect(() => {
     const handleFocusEvent = (event: CustomEvent) => {
-      console.log('InfiniteCanvas received focus event:', event.detail);
+      console.log('📡 InfiniteCanvas received focus event:', event.detail);
+      console.log('📡 Current sprite dimensions:', spriteWidth, 'x', spriteHeight);
+      
       // Verify the sprite dimensions match to ensure this is the right canvas
       if (event.detail.spriteWidth === spriteWidth && event.detail.spriteHeight === spriteHeight) {
+        console.log('✅ Dimensions match, triggering focus view');
         focusView();
+      } else {
+        console.log('⚠️ Dimensions do not match, ignoring event');
       }
     };
     
+    console.log('🔍 Setting up focus event listener for sprite:', spriteWidth, 'x', spriteHeight);
     window.addEventListener('infinite-canvas-focus', handleFocusEvent as EventListener);
     
     return () => {
+      console.log('🧽 Cleaning up focus event listener for sprite:', spriteWidth, 'x', spriteHeight);
       window.removeEventListener('infinite-canvas-focus', handleFocusEvent as EventListener);
     };
   }, [spriteWidth, spriteHeight, focusView]);

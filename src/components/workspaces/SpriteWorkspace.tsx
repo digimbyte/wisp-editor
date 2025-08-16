@@ -1,4 +1,5 @@
 import React from 'react';
+import { InfiniteCanvas, InfiniteFocusButton } from '../canvas/InfiniteCanvas';
 import type { SpriteAsset } from '../../types';
 
 interface SpriteWorkspaceProps {
@@ -8,17 +9,9 @@ interface SpriteWorkspaceProps {
   canvasView: '2d' | '3d';
   onSpriteEditorModeChange: (mode: 'brush' | 'regions' | 'animations' | 'depth' | 'logic' | 'pivot') => void;
   onCanvasViewChange: (view: '2d' | '3d') => void;
+  onOpenSpriteDialog: (mode?: 'create' | 'import') => void;
   buttonStyle: React.CSSProperties;
 }
-
-// Placeholder components that would need to be implemented separately
-const InfiniteCanvas: React.FC<{ spriteWidth: number; spriteHeight: number; onPixelClick: (x: number, y: number) => void }> = () => {
-  return <div>InfiniteCanvas component would be implemented here</div>;
-};
-
-const InfiniteFocusButton: React.FC<{ spriteWidth: number; spriteHeight: number }> = () => {
-  return <div>InfiniteFocusButton component would be implemented here</div>;
-};
 
 export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
   sprites,
@@ -27,6 +20,7 @@ export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
   canvasView,
   onSpriteEditorModeChange,
   onCanvasViewChange,
+  onOpenSpriteDialog,
   buttonStyle
 }) => {
   return (
@@ -54,16 +48,21 @@ export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
             <div style={{ marginBottom: "12px", fontWeight: "600", fontSize: "20px", color: "#e6e6e6" }}>Welcome to the Sprite Editor</div>
             <div style={{ marginBottom: "8px" }}>Create your first sprite to start designing pixel art</div>
             <div style={{ marginTop: "20px" }}>
-              <button style={{
-                padding: "12px 24px",
-                background: "linear-gradient(135deg, #2b6cff, #4d8aff)",
-                border: "none",
-                borderRadius: "6px",
-                color: "#ffffff",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "600"
-              }}>+ Create First Sprite</button>
+              <button 
+                onClick={() => onOpenSpriteDialog('create')}
+                style={{
+                  padding: "12px 24px",
+                  background: "linear-gradient(135deg, #2b6cff, #4d8aff)",
+                  border: "none",
+                  borderRadius: "6px",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600"
+                }}
+              >
+                + Create First Sprite
+              </button>
             </div>
           </div>
         </div>
@@ -142,30 +141,31 @@ export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
                     boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
                   }}>
                     {[
-                      { mode: 'brush', icon: '🖌️', label: 'Brush' },
-                      { mode: 'regions', icon: '🔲', label: 'Regions' },
-                      { mode: 'animations', icon: '🎬', label: 'Animations' },
-                      { mode: 'depth', icon: '📐', label: 'Depth' },
-                      { mode: 'logic', icon: '⚡', label: 'Logic' },
-                      { mode: 'pivot', icon: '🎯', label: 'Pivot' }
+                      { mode: 'brush', icon: '🖌️', label: 'Brush Tool' },
+                      { mode: 'regions', icon: '🔲', label: 'Region Tool' },
+                      { mode: 'animations', icon: '🎬', label: 'Animation Tool' },
+                      { mode: 'depth', icon: '📐', label: 'Depth Tool' },
+                      { mode: 'logic', icon: '⚡', label: 'Logic Tool' },
+                      { mode: 'pivot', icon: '🎯', label: 'Pivot Tool' }
                     ].map(m => (
                       <button
                         key={m.mode}
                         onClick={() => onSpriteEditorModeChange(m.mode as any)}
+                        title={m.label} // Tooltip for accessibility
                         style={{
-                          padding: "8px 12px",
+                          padding: "8px",
                           background: spriteEditorMode === m.mode ? "#2b6cff" : "transparent",
                           border: "1px solid " + (spriteEditorMode === m.mode ? "#4d8aff" : "#3a3d46"),
                           borderRadius: "6px",
                           color: spriteEditorMode === m.mode ? "#ffffff" : "#e6e6e6",
                           cursor: "pointer",
-                          fontSize: "12px",
+                          fontSize: "18px",
                           fontWeight: "500",
                           display: "flex",
-                          flexDirection: "column",
                           alignItems: "center",
-                          gap: "4px",
-                          minWidth: "50px",
+                          justifyContent: "center",
+                          width: "36px",
+                          height: "36px",
                           transition: "all 0.2s"
                         }}
                         onMouseEnter={e => {
@@ -179,8 +179,7 @@ export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
                           }
                         }}
                       >
-                        <span style={{ fontSize: "16px" }}>{m.icon}</span>
-                        <span style={{ fontSize: "10px" }}>{m.label}</span>
+                        {m.icon}
                       </button>
                     ))}
                   </div>

@@ -170,8 +170,21 @@ export function useProjectManager(
   };
 
   const createProjectWithWizard = async () => {
+    // Debug logging to identify missing fields
+    console.log('Project creation validation:');
+    console.log('- projectName:', projectName, 'isEmpty:', !projectName);
+    console.log('- projectPath:', projectPath, 'isEmpty:', !projectPath);
+    console.log('- selectedBoard:', selectedBoard, 'isEmpty:', !selectedBoard);
+    
     if (!projectName || !projectPath || !selectedBoard) {
-      alert('Please fill in all required fields');
+      const missingFields = [];
+      if (!projectName) missingFields.push('Project Name');
+      if (!projectPath) missingFields.push('Project Path');
+      if (!selectedBoard) missingFields.push('Board Selection');
+      
+      const errorMsg = `Please fill in all required fields. Missing: ${missingFields.join(', ')}`;
+      console.error(errorMsg);
+      alert(errorMsg);
       return;
     }
     
@@ -206,15 +219,19 @@ export function useProjectManager(
           await openProject(fullPath);
           
           console.log('openProject completed without throwing');
-          setLog(`Project opened successfully - you may now close this dialog`);
+          setLog(`✅ Project opened successfully!`);
           
-          // Use a more robust state verification approach
-          setLog(`✅ Project opened successfully - you may now close this dialog`);
-          
-          // Optional: Add a small delay for UI feedback, but don't rely on state checking
+          // Automatically close the project wizard dialog after successful creation
           setTimeout(() => {
-            setLog(`Project is ready for editing. You can safely close this dialog.`);
-          }, 500);
+            setLog(`Project is ready for editing.`);
+            setShowProjectWizard(false);
+            // Reset wizard state
+            setProjectCreationStep('setup');
+            setSelectedTemplate('Empty Project');
+            setSelectedBoard('');
+            setProjectName('');
+            setProjectPath('');
+          }, 1000); // Give user time to see the success message
           
         } catch (openError) {
           console.error('Failed to open project after creation:', openError);

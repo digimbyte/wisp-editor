@@ -31,6 +31,8 @@ export interface BoardConfigActions {
   setAvailableBoards: (boards: BoardDefinition[]) => void;
   setBoardColumns: (columns: BoardColumn[]) => void;
   setShowColumnManager: (show: boolean) => void;
+  setBoardSortColumn: (column: string) => void;
+  setBoardSortDirection: (dir: 'asc' | 'desc') => void;
 }
 
 export interface BoardConfigManagerHook extends BoardConfigState, BoardConfigActions {}
@@ -353,6 +355,8 @@ export function useBoardConfigManager(
     setImportedBoardFile,
     setAvailableBoards,
     setBoardColumns,
-    setShowColumnManager
+    setShowColumnManager,
+    setBoardSortColumn,
+    setBoardSortDirection
   };
 }

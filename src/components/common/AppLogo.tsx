@@ -1,4 +1,3 @@
-import React from 'react';
 
 export const AppLogo = ({ size = 32, className = "" }: { size?: number; className?: string }) => {
   return (

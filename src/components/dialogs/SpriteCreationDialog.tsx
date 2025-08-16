@@ -318,9 +318,13 @@ function CreateSpriteForm({ spriteData, onDataChange }: any) {
           <input
             type="number"
             value={spriteData.width}
-            onChange={(e) => onDataChange({...spriteData, width: parseInt(e.target.value) || 32})}
+            onChange={(e) => {
+              const value = parseInt(e.target.value) || 32;
+              const clampedValue = Math.min(Math.max(value, 1), 1024);
+              onDataChange({...spriteData, width: clampedValue});
+            }}
             min="1"
-            max="512"
+            max="1024"
             style={{
               width: "100%",
               padding: "8px 12px",
@@ -338,9 +342,13 @@ function CreateSpriteForm({ spriteData, onDataChange }: any) {
           <input
             type="number"
             value={spriteData.height}
-            onChange={(e) => onDataChange({...spriteData, height: parseInt(e.target.value) || 32})}
+            onChange={(e) => {
+              const value = parseInt(e.target.value) || 32;
+              const clampedValue = Math.min(Math.max(value, 1), 1024);
+              onDataChange({...spriteData, height: clampedValue});
+            }}
             min="1"
-            max="512"
+            max="1024"
             style={{
               width: "100%",
               padding: "8px 12px",
@@ -353,6 +361,23 @@ function CreateSpriteForm({ spriteData, onDataChange }: any) {
             }}
           />
         </div>
+      </div>
+      
+      {/* Dimension limit notice */}
+      <div style={{
+        marginBottom: "16px",
+        padding: "8px 12px",
+        background: "#1e2128",
+        border: "1px solid #2a2d36",
+        borderRadius: "4px",
+        fontSize: "11px",
+        color: "#888",
+        display: "flex",
+        alignItems: "center",
+        gap: "6px"
+      }}>
+        <span>ⓘ</span>
+        <span>Maximum sprite dimensions: 1024×1024 pixels</span>
       </div>
       
       {/* Animation Settings */}

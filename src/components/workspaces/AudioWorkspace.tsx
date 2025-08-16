@@ -9,9 +9,9 @@ interface AudioWorkspaceProps {
 }
 
 export function AudioWorkspace({
-  audioAssets,
-  selectedAudio,
-  onAudioSelect,
+  audioAssets: _audioAssets,
+  selectedAudio: _selectedAudio,
+  onAudioSelect: _onAudioSelect,
   buttonStyle
 }: AudioWorkspaceProps) {
   return (

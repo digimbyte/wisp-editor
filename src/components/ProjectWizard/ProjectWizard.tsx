@@ -63,6 +63,9 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
   buttonStyle
 }) => {
   if (!show) return null;
+  
+  // Debug logging for board selection
+  console.log('ProjectWizard - selectedBoard:', selectedBoard, 'step:', projectCreationStep);
 
   const selectDirectory = async () => {
     try {
@@ -586,7 +589,10 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({
                     return (
                       <div
                         key={board.id}
-                        onClick={() => setSelectedBoard(board.id)}
+                        onClick={() => {
+                          console.log('Board clicked:', board.id, board.name);
+                          setSelectedBoard(board.id);
+                        }}
                         style={{
                           display: "flex",
                           background: selectedBoard === board.id ? "#2b6cff" : "transparent",

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BoardDefinition, BoardColumn } from '../../types';
+import { BoardDefinition } from '../../types';
 
 interface BoardConfigDialogProps {
   show: boolean;
@@ -10,7 +10,6 @@ interface BoardConfigDialogProps {
   newBoardDefinition: Partial<BoardDefinition>;
   setNewBoardDefinition: (board: Partial<BoardDefinition>) => void;
   importedBoardFile: string;
-  setImportedBoardFile: (file: string) => void;
   buttonStyle: React.CSSProperties;
 }
 
@@ -23,7 +22,6 @@ export const BoardConfigDialog: React.FC<BoardConfigDialogProps> = ({
   newBoardDefinition,
   setNewBoardDefinition,
   importedBoardFile,
-  setImportedBoardFile,
   buttonStyle
 }) => {
   if (!show) return null;

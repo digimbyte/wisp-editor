@@ -206,7 +206,7 @@ export function useSpriteManager(
   };
   
   // Function to create sprite from dialog
-  const createSpriteFromDialog = async (projectDir: string, activeWorkspace: string) => {
+  const createSpriteFromDialog = async (projectDir: string, _activeWorkspace: string) => {
     if (!newSpriteData.name) {
       alert('Please provide a sprite name');
       return;
@@ -225,11 +225,22 @@ export function useSpriteManager(
     setIsCreatingSprite(true);
     
     try {
+      // Validate sprite dimensions - hard limit of 1024px
+      if (newSpriteData.width > 1024 || newSpriteData.height > 1024) {
+        alert(`Sprite dimensions cannot exceed 1024px. Current: ${newSpriteData.width}×${newSpriteData.height}`);
+        return;
+      }
+      
+      if (newSpriteData.width < 1 || newSpriteData.height < 1) {
+        alert('Sprite dimensions must be at least 1px');
+        return;
+      }
+      
       const spriteData = {
         name: newSpriteData.name,
         type: newSpriteData.type,
-        width: newSpriteData.width,
-        height: newSpriteData.height,
+        width: Math.min(Math.max(newSpriteData.width, 1), 1024),
+        height: Math.min(Math.max(newSpriteData.height, 1), 1024),
         frames: newSpriteData.frames,
         animationSpeed: newSpriteData.animationSpeed,
         importPath: spriteDialogMode === 'import' ? newSpriteData.importPath : undefined
