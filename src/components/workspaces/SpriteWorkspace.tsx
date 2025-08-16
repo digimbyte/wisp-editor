@@ -88,7 +88,15 @@ export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
         </div>
       ) : (
         // Sprite selected - show modern pixel editor
-        <div style={{ width: "100%", display: "flex", flexDirection: "column", position: "relative" }}>
+        <div style={{ 
+          width: "100%", 
+          display: "flex", 
+          flexDirection: "column", 
+          position: "relative",
+          overflow: "hidden",
+          minHeight: 0,
+          height: "100%" 
+        }}>
           {(() => {
             const sprite = sprites.find(s => s.id === selectedSprite);
             if (!sprite) return null;
@@ -124,7 +132,15 @@ export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
                 </div>
 
                 {/* Main Canvas Area with Floating Controls */}
-                <div style={{ flex: 1, position: "relative", background: "#1a1d23" }}>
+                <div style={{ 
+                  flex: 1, 
+                  position: "relative", 
+                  background: "#1a1d23",
+                  overflow: "hidden",
+                  minHeight: 0,
+                  display: "flex",
+                  flexDirection: "column" 
+                }}>
                   {/* Left Floating Mode Buttons */}
                   <div style={{
                     position: "absolute",
