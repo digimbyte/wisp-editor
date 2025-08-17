@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Painterro from 'painterro';
 
+import { painterroService } from '../../services/painterroService';
+
 export type PainterroTool = 'brush' | 'eraser' | 'line' | 'rect' | 'ellipse' | 'bucket' | 'select' | 'crop';
 
 interface PainterroWrapperProps {
@@ -10,6 +12,7 @@ interface PainterroWrapperProps {
   color?: string;
   brushSize?: number;
   onImageChange?: (dataUrl: string) => void;
+  enabled?: boolean; // Controls visibility and interaction
   style?: React.CSSProperties;
   className?: string;
 }
@@ -20,118 +23,40 @@ export const PainterroWrapper: React.FC<PainterroWrapperProps> = ({
   activeTool = 'brush',
   color = '#000000',
   brushSize = 2,
-  onImageChange,
+  onImageChange = () => {},
+  enabled = false,
   style,
   className
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const painterroRef = useRef<any>(null);
-  const [isReady, setIsReady] = useState(false);
 
-  // Initialize Painterro with proper error handling
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) {
-      console.warn('⚠️ Painterro container not ready');
-      return;
-    }
-
-    // Add small delay to ensure DOM is fully ready
-    const initTimer = setTimeout(() => {
-      if (!containerRef.current) {
-        console.warn('⚠️ Container ref lost during initialization delay');
-        return;
-      }
-
-      console.log('🎨 Initializing Painterro...');
-      
-      let painterroInstance: any = null;
-    
-    try {
-      painterroInstance = Painterro({
-        id: 'wisp-painterro-' + Date.now(),
-        defaultTool: activeTool,
-        defaultColor: color,
-        defaultLineWidth: brushSize,
-        // Hide the built-in toolbar since we want custom buttons
-        hiddenTools: [],
-        // Set canvas size
-        defaultSize: {
-          width: Math.max(width, 400),
-          height: Math.max(height, 300)
-        },
-        // Custom save handler
-        saveHandler: (image: any, done: () => void) => {
-          try {
-            if (onImageChange && image && typeof image.asDataURL === 'function') {
-              const dataUrl = image.asDataURL('image/png');
-              onImageChange(dataUrl);
-            }
-          } catch (error) {
-            console.error('❌ Error in save handler:', error);
-          }
-          done();
-        },
-        // Initialize with proper error handling
-        onInit: (inst: any) => {
-          painterroRef.current = inst;
-          setIsReady(true);
-          console.log('✅ Painterro initialized successfully');
-        },
-        onError: (error: any) => {
-          console.error('❌ Painterro error:', error);
-        }
+    if (enabled && containerRef.current) {
+      console.log('🎨 Showing Painterro in container', containerRef.current);
+      painterroService.show(containerRef.current, { 
+        width, 
+        height, 
+        onImageChange 
       });
-
-      // Show Painterro with error handling
-      if (painterroInstance && container) {
-        painterroInstance.show(container);
-      } else {
-        console.error('❌ Failed to create Painterro instance or container missing');
-      }
-    } catch (error) {
-      console.error('❌ Failed to initialize Painterro:', error);
+    } else {
+      console.log('🎨 Hiding Painterro');
+      painterroService.hide();
     }
+    // No return cleanup needed as the service manages the lifecycle
+  }, [enabled, width, height, onImageChange]);
 
-    }, 100); // 100ms delay to ensure DOM is ready
-
-    return () => {
-      clearTimeout(initTimer);
-      try {
-        if (painterroRef.current) {
-          painterroRef.current.close();
-          painterroRef.current = null;
-        }
-        setIsReady(false);
-      } catch (error) {
-        console.error('❌ Error cleaning up Painterro:', error);
-      }
-    };
-  }, [width, height]); // Re-initialize if size changes
-
-  // Update tool when activeTool prop changes
+  // Pass tool/color/size changes to the service
   useEffect(() => {
-    if (isReady && painterroRef.current) {
-      painterroRef.current.tool = activeTool;
-      console.log('🔧 Tool changed to:', activeTool);
-    }
-  }, [isReady, activeTool]);
+    if (enabled) painterroService.setTool(activeTool);
+  }, [enabled, activeTool]);
 
-  // Update color when color prop changes
   useEffect(() => {
-    if (isReady && painterroRef.current) {
-      painterroRef.current.color = color;
-      console.log('🎨 Color changed to:', color);
-    }
-  }, [isReady, color]);
+    if (enabled) painterroService.setColor(color);
+  }, [enabled, color]);
 
-  // Update brush size when brushSize prop changes
   useEffect(() => {
-    if (isReady && painterroRef.current) {
-      painterroRef.current.brushSize = brushSize;
-      console.log('📏 Brush size changed to:', brushSize);
-    }
-  }, [isReady, brushSize]);
+    if (enabled) painterroService.setBrushSize(brushSize);
+  }, [enabled, brushSize]);
 
   return (
     <div 
@@ -145,15 +70,6 @@ export const PainterroWrapper: React.FC<PainterroWrapperProps> = ({
     />
   );
 };
-
-// Tool button component for the right panel
-interface ToolButtonProps {
-  tool: PainterroTool;
-  isActive: boolean;
-  onClick: () => void;
-  icon: string;
-  label: string;
-}
 
 export const ToolButton: React.FC<ToolButtonProps> = ({
   tool,

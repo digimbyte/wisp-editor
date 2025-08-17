@@ -292,19 +292,20 @@ export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
 
                   {/* Unified Canvas Container */}
                   {canvasView === '2d' ? (
-                    <InfiniteCanvasWithPainterro 
-                      spriteWidth={sprite.width}
-                      spriteHeight={sprite.height}
-                      paintTool={spriteEditorMode === 'brush' ? activePaintTool : undefined}
-                      paintColor={currentColor}
-                      paintBrushSize={brushSize}
-                      onPixelClick={(x, y) => {
-                        console.log(`Pixel clicked: ${x}, ${y}`);
-                      }}
-                      onPaintDataUpdate={(dataUrl) => {
-                        console.log('Sprite image updated:', dataUrl);
-                      }}
-                    />
+                <InfiniteCanvasWithPainterro 
+                  spriteWidth={sprite.width}
+                  spriteHeight={sprite.height}
+                  paintTool={spriteEditorMode === 'brush' ? activePaintTool : undefined}
+                  paintColor={currentColor}
+                  paintBrushSize={brushSize}
+                  onPixelClick={(x, y) => {
+                    console.log(`Pixel clicked: ${x}, ${y}`);
+                  }}
+                  onPaintDataUpdate={(dataUrl) => {
+                    console.log('Sprite image updated:', dataUrl);
+                    // Update the sprite data when paint changes occur
+                  }}
+                />
                   ) : (
                     // 3D Rotating View - keep existing implementation
                     <div style={{ 

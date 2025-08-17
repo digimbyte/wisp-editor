@@ -99,6 +99,12 @@ interface MainEditorViewProps {
   setActiveColorTab: (tab: 'picker' | 'custom' | 'common' | 'variations') => void;
   showLutManager: boolean;
   setShowLutManager: (show: boolean) => void;
+  // Paint tool state
+  activePaintTool?: string;
+  setActivePaintTool?: (tool: string) => void;
+  paintColor?: string;
+  setBrushSize?: (size: number) => void;
+  brushSize?: number;
   
   // Dialog Manager props - Sprite Dialog
   showSpriteDialog: boolean;
@@ -371,6 +377,11 @@ export const MainEditorView: React.FC<MainEditorViewProps> = (props) => {
           showLutManager={props.showLutManager}
           setShowLutManager={props.setShowLutManager}
           spriteEditorMode={props.spriteEditorMode}
+          activePaintTool={props.activePaintTool}
+          onPaintToolChange={props.setActivePaintTool}
+          paintColor={props.paintColor}
+          brushSize={props.brushSize}
+          onBrushSizeChange={props.setBrushSize}
         />
       </div>
 

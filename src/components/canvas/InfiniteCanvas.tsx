@@ -529,6 +529,16 @@ export const InfiniteCanvasWithPainterro: React.FC<InfiniteCanvasWithPainterroPr
   paintBrushSize,
   onPaintDataUpdate 
 }) => {
+  // Debug logging for paint tool integration
+  React.useEffect(() => {
+    console.log('🎨 InfiniteCanvasWithPainterro render with paint tool state:', {
+      paintTool,
+      paintColor,
+      paintBrushSize,
+      spriteWidth,
+      spriteHeight
+    });
+  }, [paintTool, paintColor, paintBrushSize, spriteWidth, spriteHeight]);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const painterroRef = React.useRef<HTMLDivElement | null>(null);
@@ -911,16 +921,16 @@ export const InfiniteCanvasWithPainterro: React.FC<InfiniteCanvasWithPainterroPr
         onContextMenu={handleContextMenu}
       />
       
-      {/* Painterro overlay - only visible when paint tools are active */}
-      {paintTool && (
-        <div 
+      {/* Painterro overlay: always mounted so Painterro can initialize early */}
+      <div 
           ref={painterroRef}
           style={{
             position: "absolute",
-            pointerEvents: "auto",
+            pointerEvents: paintTool ? "auto" : "none",
             overflow: "hidden",
             borderRadius: "2px",
-            zIndex: 10
+            zIndex: 10,
+            display: paintTool ? 'block' : 'none'
           }}
           onMouseDown={(e) => {
             // Handle right-click panning even when Painterro is active
@@ -959,12 +969,12 @@ export const InfiniteCanvasWithPainterro: React.FC<InfiniteCanvasWithPainterroPr
             width={spriteWidth}
             height={spriteHeight}
             activeTool={paintTool}
-            activeColor={paintColor || '#000000'}
+            color={paintColor || '#000000'}
             brushSize={paintBrushSize || 1}
-            onDataUpdate={onPaintDataUpdate}
+            onImageChange={onPaintDataUpdate}
+            enabled={!!paintTool}
           />
         </div>
-      )}
       
       {/* Zoom indicator */}
       <div style={{

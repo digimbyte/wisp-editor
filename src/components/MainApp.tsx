@@ -1,3 +1,5 @@
+import { painterroService } from '../services/painterroService';
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppStateManager } from './views/AppStateManager';
 import { useProjectManager } from '../hooks/useProjectManager';
@@ -168,10 +170,14 @@ export const MainApp: React.FC = () => {
     setContextMenu
   );
 
-  // Initialize config service and load config
+  // Initialize services and load config
   useEffect(() => {
-    const initializeConfig = async () => {
+    const initialize = async () => {
       try {
+        // Initialize Painterro service first
+        painterroService.init();
+        
+        // Then load app config
         await configService.initialize();
         const loadedConfig = configService.getConfig();
         setConfig(loadedConfig);
@@ -189,7 +195,7 @@ export const MainApp: React.FC = () => {
       }
     };
 
-    initializeConfig();
+    initialize();
   }, []);
 
   // Get active tab

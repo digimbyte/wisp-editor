@@ -30,6 +30,12 @@ interface RightPanelProps {
   setShowLutManager: (show: boolean) => void;
   // Sprite editing specific props
   spriteEditorMode?: 'brush' | 'regions' | 'animations' | 'depth' | 'logic' | 'pivot';
+  // Paint tool state (passed through from MainApp)
+  activePaintTool?: string;
+  onPaintToolChange?: (tool: string) => void;
+  paintColor?: string;
+  brushSize?: number;
+  onBrushSizeChange?: (size: number) => void;
 }
 
 // Bridge component to sync context state with external props
@@ -70,7 +76,12 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   setActiveColorTab,
   showLutManager,
   setShowLutManager,
-  spriteEditorMode
+  spriteEditorMode,
+  activePaintTool,
+  onPaintToolChange,
+  paintColor,
+  brushSize,
+  onBrushSizeChange
 }) => {
   const panelStyle = {
     background: "#1a1d23",
@@ -115,7 +126,13 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             switch (spriteEditorMode) {
               case 'brush':
               default:
-                return <DrawingTools />;
+                return <DrawingTools 
+                  activeTool={activePaintTool as any}
+                  onSelectTool={onPaintToolChange as any}
+                  brushSize={brushSize}
+                  onBrushSizeChange={onBrushSizeChange}
+                  currentColor={paintColor}
+                />;
               case 'regions':
                 return <RegionTools />;
               case 'animations':
