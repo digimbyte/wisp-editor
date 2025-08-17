@@ -86,6 +86,14 @@ interface AppStateManagerProps {
   setCanvasView: (view: '2d' | '3d') => void;
   openSpriteDialog: (mode: 'create' | 'import') => void;
   
+  // Paint tool state
+  activePaintTool: string;
+  setActivePaintTool: (tool: string) => void;
+  paintColor: string;
+  setPaintColor: (color: string) => void;
+  brushSize: number;
+  setBrushSize: (size: number) => void;
+  
   // Layout Workspace
   layoutPanels: LayoutPanel[];
   isPlayMode: boolean;
@@ -303,6 +311,14 @@ export const AppStateManager: React.FC<AppStateManagerProps> = (props) => {
       canvasView={props.canvasView}
       setCanvasView={props.setCanvasView}
       openSpriteDialog={props.openSpriteDialog}
+      
+      // Paint tool state props
+      activePaintTool={props.activePaintTool}
+      setActivePaintTool={props.setActivePaintTool}
+      paintColor={props.paintColor}
+      setPaintColor={props.setPaintColor}
+      brushSize={props.brushSize}
+      setBrushSize={props.setBrushSize}
       
       // Layout Workspace props
       layoutPanels={props.layoutPanels}

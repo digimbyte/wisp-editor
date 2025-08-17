@@ -1,5 +1,6 @@
-import React from 'react';
-import { InfiniteCanvas, InfiniteFocusButton } from '../canvas/InfiniteCanvas';
+import React, { useState } from 'react';
+import { InfiniteCanvasWithPainterro, InfiniteFocusButton } from '../canvas/InfiniteCanvas';
+import { PainterroTool } from '../canvas/PainterroWrapper';
 import type { SpriteAsset } from '../../types';
 
 interface SpriteWorkspaceProps {
@@ -11,6 +12,13 @@ interface SpriteWorkspaceProps {
   onCanvasViewChange: (view: '2d' | '3d') => void;
   onOpenSpriteDialog: (mode?: 'create' | 'import') => void;
   buttonStyle: React.CSSProperties;
+  // Paint tool state callbacks
+  activePaintTool?: PainterroTool;
+  onPaintToolChange?: (tool: PainterroTool) => void;
+  paintColor?: string;
+  onPaintColorChange?: (color: string) => void;
+  brushSize?: number;
+  onBrushSizeChange?: (size: number) => void;
 }
 
 export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
@@ -21,8 +29,49 @@ export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
   onSpriteEditorModeChange,
   onCanvasViewChange,
   onOpenSpriteDialog,
-  buttonStyle
+  buttonStyle,
+  // Paint tool props (optional)
+  activePaintTool: propActivePaintTool,
+  onPaintToolChange,
+  paintColor: propPaintColor,
+  onPaintColorChange,
+  brushSize: propBrushSize,
+  onBrushSizeChange
 }) => {
+  // Local paint tool state - used as fallback if props not provided
+  const [localActivePaintTool, setLocalActivePaintTool] = useState<PainterroTool>('brush');
+  const [localCurrentColor, setLocalCurrentColor] = useState('#000000');
+  const [localBrushSize, setLocalBrushSize] = useState(2);
+  
+  // Use props if provided, otherwise use local state
+  const activePaintTool = propActivePaintTool ?? localActivePaintTool;
+  const currentColor = propPaintColor ?? localCurrentColor;
+  const brushSize = propBrushSize ?? localBrushSize;
+  
+  // Handle tool changes (use callback if provided, otherwise update local state)
+  const handlePaintToolChange = (tool: PainterroTool) => {
+    if (onPaintToolChange) {
+      onPaintToolChange(tool);
+    } else {
+      setLocalActivePaintTool(tool);
+    }
+  };
+  
+  const handleColorChange = (color: string) => {
+    if (onPaintColorChange) {
+      onPaintColorChange(color);
+    } else {
+      setLocalCurrentColor(color);
+    }
+  };
+  
+  const handleBrushSizeChange = (size: number) => {
+    if (onBrushSizeChange) {
+      onBrushSizeChange(size);
+    } else {
+      setLocalBrushSize(size);
+    }
+  };
   return (
     <div style={{ height: "100%", display: "flex" }}>
       {sprites.length === 0 ? (
@@ -241,13 +290,19 @@ export const SpriteWorkspace: React.FC<SpriteWorkspaceProps> = ({
                     />
                   </div>
 
-                  {/* Infinite Canvas Container */}
+                  {/* Unified Canvas Container */}
                   {canvasView === '2d' ? (
-                    <InfiniteCanvas 
+                    <InfiniteCanvasWithPainterro 
                       spriteWidth={sprite.width}
                       spriteHeight={sprite.height}
+                      paintTool={spriteEditorMode === 'brush' ? activePaintTool : undefined}
+                      paintColor={currentColor}
+                      paintBrushSize={brushSize}
                       onPixelClick={(x, y) => {
                         console.log(`Pixel clicked: ${x}, ${y}`);
+                      }}
+                      onPaintDataUpdate={(dataUrl) => {
+                        console.log('Sprite image updated:', dataUrl);
                       }}
                     />
                   ) : (

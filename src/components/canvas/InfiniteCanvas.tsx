@@ -1,4 +1,5 @@
 import React from 'react';
+import { PainterroWrapper, PainterroTool } from './PainterroWrapper';
 
 // Focus Button Component for InfiniteCanvas
 interface InfiniteFocusButtonProps {
@@ -47,7 +48,19 @@ export const InfiniteFocusButton: React.FC<InfiniteFocusButtonProps> = ({ sprite
   );
 };
 
-// Infinite Canvas Component for Sprite Editing
+// Infinite Canvas with Painterro Integration Component for Sprite Editing
+interface InfiniteCanvasWithPainterroProps {
+  spriteWidth: number;
+  spriteHeight: number;
+  onPixelClick: (x: number, y: number) => void;
+  // Paint tool integration
+  paintTool?: PainterroTool;
+  paintColor?: string;
+  paintBrushSize?: number;
+  onPaintDataUpdate?: (imageData: string) => void;
+}
+
+// Backward compatibility wrapper
 interface InfiniteCanvasProps {
   spriteWidth: number;
   spriteHeight: number;
@@ -501,6 +514,503 @@ export const InfiniteCanvas: React.FC<InfiniteCanvasProps> = ({ spriteWidth, spr
         <div>• Right-click + drag to pan</div>
         <div>• Left-click to paint pixels</div>
         <div>• 16px base grid system</div>
+      </div>
+    </div>
+  );
+};
+
+// Unified Infinite Canvas with Painterro Overlay
+export const InfiniteCanvasWithPainterro: React.FC<InfiniteCanvasWithPainterroProps> = ({ 
+  spriteWidth, 
+  spriteHeight, 
+  onPixelClick, 
+  paintTool,
+  paintColor,
+  paintBrushSize,
+  onPaintDataUpdate 
+}) => {
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const painterroRef = React.useRef<HTMLDivElement | null>(null);
+  
+  // Canvas state
+  const [zoom, setZoom] = React.useState(1);
+  const [panX, setPanX] = React.useState(0);
+  const [panY, setPanY] = React.useState(0);
+  const [isPanning, setIsPanning] = React.useState(false);
+  const [lastMousePos, setLastMousePos] = React.useState({ x: 0, y: 0 });
+  const [isInitialized, setIsInitialized] = React.useState(false);
+  
+  // Canvas dimensions
+  const GRID_SIZE = 16;
+  const MIN_ZOOM = 0.25;
+  const MAX_ZOOM = 32;
+  
+  // Calculate sprite bounds in screen coordinates
+  const calculateSpriteBounds = React.useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    
+    const rect = canvas.getBoundingClientRect();
+    const canvasWidth = rect.width;
+    const canvasHeight = rect.height;
+    
+    const spritePixelSize = zoom;
+    const worldCenterX = canvasWidth / 2 + panX;
+    const worldCenterY = canvasHeight / 2 + panY;
+    
+    const spriteTotalWidth = spriteWidth * spritePixelSize;
+    const spriteTotalHeight = spriteHeight * spritePixelSize;
+    
+    const spriteBoundsX = worldCenterX - (spriteTotalWidth / 2);
+    const spriteBoundsY = worldCenterY - (spriteTotalHeight / 2);
+    
+    return {
+      x: spriteBoundsX,
+      y: spriteBoundsY,
+      width: spriteTotalWidth,
+      height: spriteTotalHeight
+    };
+  }, [zoom, panX, panY, spriteWidth, spriteHeight]);
+  
+  // Draw the infinite grid and sprite bounds
+  const drawCanvas = React.useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    
+    const canvasWidth = rect.width;
+    const canvasHeight = rect.height;
+    
+    // Clear canvas
+    ctx.fillStyle = '#1a1d23';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    
+    const spritePixelSize = zoom;
+    const worldCenterX = canvasWidth / 2 + panX;
+    const worldCenterY = canvasHeight / 2 + panY;
+    
+    const spriteTotalWidth = spriteWidth * spritePixelSize;
+    const spriteTotalHeight = spriteHeight * spritePixelSize;
+    
+    const spriteBoundsX = worldCenterX - (spriteTotalWidth / 2);
+    const spriteBoundsY = worldCenterY - (spriteTotalHeight / 2);
+    
+    // Draw finite grid (1024x1024 world)
+    ctx.strokeStyle = '#2a2d36';
+    ctx.lineWidth = 0.5;
+    
+    const WORLD_SIZE_PIXELS = 1024;
+    const GRID_CELLS_PER_SIDE = WORLD_SIZE_PIXELS / GRID_SIZE;
+    const scaledGridSize = GRID_SIZE * zoom;
+    const scaledWorldSize = WORLD_SIZE_PIXELS * zoom;
+    
+    const worldLeft = worldCenterX - scaledWorldSize / 2;
+    const worldTop = worldCenterY - scaledWorldSize / 2;
+    const worldRight = worldLeft + scaledWorldSize;
+    const worldBottom = worldTop + scaledWorldSize;
+    
+    if (worldRight > 0 && worldLeft < canvasWidth && worldBottom > 0 && worldTop < canvasHeight) {
+      for (let i = 0; i <= GRID_CELLS_PER_SIDE; i++) {
+        const x = worldLeft + i * scaledGridSize;
+        const y = worldTop + i * scaledGridSize;
+        
+        if (x >= 0 && x <= canvasWidth) {
+          ctx.beginPath();
+          ctx.moveTo(x, Math.max(0, worldTop));
+          ctx.lineTo(x, Math.min(canvasHeight, worldBottom));
+          ctx.stroke();
+        }
+        
+        if (y >= 0 && y <= canvasHeight) {
+          ctx.beginPath();
+          ctx.moveTo(Math.max(0, worldLeft), y);
+          ctx.lineTo(Math.min(canvasWidth, worldRight), y);
+          ctx.stroke();
+        }
+      }
+    }
+    
+    // Sprite background (semi-transparent white when paint tools are active)
+    ctx.fillStyle = paintTool ? 'rgba(255, 255, 255, 0.3)' : '#ffffff';
+    ctx.fillRect(spriteBoundsX, spriteBoundsY, spriteTotalWidth, spriteTotalHeight);
+    
+    // Sprite border 
+    ctx.strokeStyle = paintTool ? '#00ff88' : '#ff4444';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(spriteBoundsX, spriteBoundsY, spriteTotalWidth, spriteTotalHeight);
+    
+    // Draw sprite pixel grid if zoomed in enough
+    if (spritePixelSize >= 8) {
+      ctx.strokeStyle = paintTool ? 'rgba(224, 224, 224, 0.4)' : '#e0e0e0';
+      ctx.lineWidth = 0.5;
+      
+      for (let x = 0; x <= spriteWidth; x++) {
+        const lineX = spriteBoundsX + x * spritePixelSize;
+        ctx.beginPath();
+        ctx.moveTo(lineX, spriteBoundsY);
+        ctx.lineTo(lineX, spriteBoundsY + spriteTotalHeight);
+        ctx.stroke();
+      }
+      
+      for (let y = 0; y <= spriteHeight; y++) {
+        const lineY = spriteBoundsY + y * spritePixelSize;
+        ctx.beginPath();
+        ctx.moveTo(spriteBoundsX, lineY);
+        ctx.lineTo(spriteBoundsX + spriteTotalWidth, lineY);
+        ctx.stroke();
+      }
+    }
+  }, [zoom, panX, panY, spriteWidth, spriteHeight, paintTool]);
+  
+  // Update Painterro overlay position and size
+  const updatePainterroOverlay = React.useCallback(() => {
+    if (!painterroRef.current) return;
+    
+    const spriteBounds = calculateSpriteBounds();
+    if (!spriteBounds) return;
+    
+    const painterroDiv = painterroRef.current;
+    painterroDiv.style.left = `${spriteBounds.x}px`;
+    painterroDiv.style.top = `${spriteBounds.y}px`;
+    painterroDiv.style.width = `${spriteBounds.width}px`;
+    painterroDiv.style.height = `${spriteBounds.height}px`;
+    painterroDiv.style.display = paintTool ? 'block' : 'none';
+  }, [calculateSpriteBounds, paintTool]);
+  
+  // Handle mouse wheel for zooming - works from container level to catch all wheel events
+  const handleWheel = React.useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    const worldX = (mouseX - rect.width / 2 - panX) / zoom;
+    const worldY = (mouseY - rect.height / 2 - panY) / zoom;
+    
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom * zoomFactor));
+    
+    const newPanX = mouseX - rect.width / 2 - worldX * newZoom;
+    const newPanY = mouseY - rect.height / 2 - worldY * newZoom;
+    
+    setZoom(newZoom);
+    setPanX(newPanX);
+    setPanY(newPanY);
+  }, [zoom, panX, panY]);
+  
+  // Handle mouse down for panning and pixel editing
+  const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
+    if (e.button === 2) { // Right click
+      e.preventDefault();
+      setIsPanning(true);
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+    } else if (e.button === 0 && !paintTool) { // Left click for pixel editing (only when not using paint tools)
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      const spriteBounds = calculateSpriteBounds();
+      if (!spriteBounds) return;
+      
+      const relativeX = mouseX - spriteBounds.x;
+      const relativeY = mouseY - spriteBounds.y;
+      
+      if (relativeX >= 0 && relativeX < spriteBounds.width &&
+          relativeY >= 0 && relativeY < spriteBounds.height) {
+        const spritePixelSize = zoom;
+        const pixelX = Math.floor(relativeX / spritePixelSize);
+        const pixelY = Math.floor(relativeY / spritePixelSize);
+        onPixelClick(pixelX, pixelY);
+      }
+    }
+  }, [zoom, panX, panY, spriteWidth, spriteHeight, onPixelClick, paintTool, calculateSpriteBounds]);
+  
+  // Handle mouse move for panning
+  const handleMouseMove = React.useCallback((e: React.MouseEvent) => {
+    if (isPanning) {
+      const deltaX = e.clientX - lastMousePos.x;
+      const deltaY = e.clientY - lastMousePos.y;
+      
+      setPanX(prev => prev + deltaX);
+      setPanY(prev => prev + deltaY);
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+    }
+  }, [isPanning, lastMousePos]);
+  
+  // Handle mouse up
+  const handleMouseUp = React.useCallback(() => {
+    setIsPanning(false);
+  }, []);
+  
+  // Handle context menu
+  const handleContextMenu = React.useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+  }, []);
+  
+  // Focus view function
+  const focusView = React.useCallback(() => {
+    console.log('🎯 focusView called for sprite:', spriteWidth, 'x', spriteHeight);
+    
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      console.warn('❌ Canvas ref not available for focus');
+      return;
+    }
+    
+    const rect = canvas.getBoundingClientRect();
+    const canvasWidth = rect.width;
+    const canvasHeight = rect.height;
+    
+    const smallerDimension = Math.min(canvasWidth, canvasHeight);
+    const targetSpriteScreenSize = smallerDimension * 0.6;
+    
+    const largerSpriteDimension = Math.max(spriteWidth, spriteHeight);
+    let targetZoom = targetSpriteScreenSize / largerSpriteDimension;
+    
+    if (spriteWidth <= 16 && spriteHeight <= 16) {
+      targetZoom = Math.max(targetZoom, 16);
+    } else if (spriteWidth <= 32 && spriteHeight <= 32) {
+      targetZoom = Math.max(targetZoom, 12);
+    } else if (spriteWidth <= 64 && spriteHeight <= 64) {
+      targetZoom = Math.max(targetZoom, 8);
+    }
+    
+    targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom));
+    
+    const targetPanX = 0;
+    const targetPanY = 0;
+    
+    setZoom(targetZoom);
+    setPanX(targetPanX);
+    setPanY(targetPanY);
+    
+    console.log('✅ Focus view applied successfully');
+  }, [spriteWidth, spriteHeight, MIN_ZOOM, MAX_ZOOM]);
+  
+  // Auto-focus on initial load and when sprite dimensions change
+  React.useEffect(() => {
+    if (!isInitialized) {
+      const timer = setTimeout(() => {
+        focusView();
+        setIsInitialized(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    } else {
+      focusView();
+    }
+  }, [isInitialized, focusView, spriteWidth, spriteHeight]);
+  
+  // Redraw canvas when properties change
+  React.useEffect(() => {
+    drawCanvas();
+  }, [drawCanvas]);
+  
+  // Update Painterro overlay when view changes
+  React.useEffect(() => {
+    updatePainterroOverlay();
+  }, [updatePainterroOverlay]);
+  
+  // Set up resize observer
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const resizeObserver = new ResizeObserver(() => {
+      drawCanvas();
+      updatePainterroOverlay();
+    });
+    
+    resizeObserver.observe(canvas);
+    
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [drawCanvas, updatePainterroOverlay]);
+  
+  // Handle global mouse events for panning
+  React.useEffect(() => {
+    if (isPanning) {
+      const handleGlobalMouseMove = (e: MouseEvent) => {
+        const deltaX = e.clientX - lastMousePos.x;
+        const deltaY = e.clientY - lastMousePos.y;
+        
+        setPanX(prev => prev + deltaX);
+        setPanY(prev => prev + deltaY);
+        setLastMousePos({ x: e.clientX, y: e.clientY });
+      };
+      
+      const handleGlobalMouseUp = () => {
+        setIsPanning(false);
+      };
+      
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
+      };
+    }
+  }, [isPanning, lastMousePos]);
+  
+  // Listen for focus events
+  React.useEffect(() => {
+    const handleFocusEvent = (event: CustomEvent) => {
+      if (event.detail.spriteWidth === spriteWidth && event.detail.spriteHeight === spriteHeight) {
+        focusView();
+      }
+    };
+    
+    window.addEventListener('infinite-canvas-focus', handleFocusEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('infinite-canvas-focus', handleFocusEvent as EventListener);
+    };
+  }, [spriteWidth, spriteHeight, focusView]);
+  
+  return (
+    <div 
+      ref={containerRef}
+      style={{ 
+        width: "100%", 
+        height: "100%", 
+        position: "relative",
+        overflow: "hidden",
+        cursor: isPanning ? 'grabbing' : 'default'
+      }}
+      onWheel={handleWheel} // Move wheel event to container to catch all events
+    >
+      {/* Infinite grid canvas */}
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+          imageRendering: "pixelated" as const,
+          pointerEvents: paintTool ? "none" : "auto" // Disable canvas events when paint tool is active
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onContextMenu={handleContextMenu}
+      />
+      
+      {/* Painterro overlay - only visible when paint tools are active */}
+      {paintTool && (
+        <div 
+          ref={painterroRef}
+          style={{
+            position: "absolute",
+            pointerEvents: "auto",
+            overflow: "hidden",
+            borderRadius: "2px",
+            zIndex: 10
+          }}
+          onMouseDown={(e) => {
+            // Handle right-click panning even when Painterro is active
+            if (e.button === 2) {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsPanning(true);
+              setLastMousePos({ x: e.clientX, y: e.clientY });
+            }
+            // Let Painterro handle left clicks for painting
+          }}
+          onMouseMove={(e) => {
+            if (isPanning) {
+              e.preventDefault();
+              e.stopPropagation();
+              const deltaX = e.clientX - lastMousePos.x;
+              const deltaY = e.clientY - lastMousePos.y;
+              setPanX(prev => prev + deltaX);
+              setPanY(prev => prev + deltaY);
+              setLastMousePos({ x: e.clientX, y: e.clientY });
+            }
+          }}
+          onMouseUp={(e) => {
+            if (e.button === 2) {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsPanning(false);
+            }
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          <PainterroWrapper
+            width={spriteWidth}
+            height={spriteHeight}
+            activeTool={paintTool}
+            activeColor={paintColor || '#000000'}
+            brushSize={paintBrushSize || 1}
+            onDataUpdate={onPaintDataUpdate}
+          />
+        </div>
+      )}
+      
+      {/* Zoom indicator */}
+      <div style={{
+        position: "absolute",
+        bottom: "16px",
+        left: "16px",
+        background: "rgba(42, 45, 54, 0.9)",
+        padding: "8px 12px",
+        borderRadius: "6px",
+        border: "1px solid #3a3d46",
+        color: "#e6e6e6",
+        fontSize: "12px",
+        fontWeight: "500",
+        userSelect: "none",
+        backdropFilter: "blur(8px)",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+      }}>
+        {Math.round(zoom * 100)}% • {spriteWidth}×{spriteHeight}px • {paintTool ? `🎨 ${paintTool}` : '🖱️ Grid'}
+      </div>
+      
+      {/* Instructions */}
+      <div style={{
+        position: "absolute",
+        bottom: "16px",
+        right: "16px",
+        background: "rgba(42, 45, 54, 0.9)",
+        padding: "8px 12px",
+        borderRadius: "6px",
+        border: "1px solid #3a3d46",
+        color: "#e6e6e6",
+        fontSize: "11px",
+        userSelect: "none",
+        backdropFilter: "blur(8px)",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+        maxWidth: "200px",
+        lineHeight: "1.3"
+      }}>
+        <div style={{ marginBottom: "4px", fontWeight: "600" }}>Controls:</div>
+        <div>• Scroll to zoom</div>
+        <div>• Right-click + drag to pan</div>
+        {paintTool ? (
+          <div>• Left-click to paint with {paintTool}</div>
+        ) : (
+          <div>• Left-click to edit pixels</div>
+        )}
+        <div>• Paint overlay within sprite bounds</div>
       </div>
     </div>
   );

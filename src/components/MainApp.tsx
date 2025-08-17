@@ -15,6 +15,7 @@ import type {
   SystemDefinition
 } from '../types';
 import type { RecentProject, WispConfig } from '../services/config';
+import type { PainterroTool } from './canvas/PainterroWrapper';
 
 export const MainApp: React.FC = () => {
   // Core app state
@@ -41,6 +42,11 @@ export const MainApp: React.FC = () => {
   // Sprite Workspace state
   const [spriteEditorMode, setSpriteEditorMode] = useState<'brush' | 'regions' | 'animations' | 'depth' | 'logic' | 'pivot'>('brush');
   const [canvasView, setCanvasView] = useState<'2d' | '3d'>('2d');
+  
+  // Paint tool state
+  const [activePaintTool, setActivePaintTool] = useState<PainterroTool>('brush');
+  const [paintColor, setPaintColor] = useState('#000000');
+  const [brushSize, setBrushSize] = useState(2);
 
   // Layout Workspace state
   const [layoutPanels, _setLayoutPanels] = useState<LayoutPanel[]>([]);
@@ -412,6 +418,14 @@ export const MainApp: React.FC = () => {
       canvasView={canvasView}
       setCanvasView={setCanvasView}
       openSpriteDialog={openSpriteDialogHandler}
+      
+      // Paint tool state
+      activePaintTool={activePaintTool}
+      setActivePaintTool={setActivePaintTool}
+      paintColor={paintColor}
+      setPaintColor={setPaintColor}
+      brushSize={brushSize}
+      setBrushSize={setBrushSize}
       
       // Layout Workspace
       layoutPanels={layoutPanels}
